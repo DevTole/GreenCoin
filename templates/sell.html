@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tr['sell'] }}{% endblock %}
+{% block page_name %}{{ tr['sell'] }}{% endblock %}
+{% block subtitle %}{{ tr['manageEco'] }}{% endblock %}
+
+{% block content %}
+<div class="transaction-container">
+    <div class="transaction-buttons">
+        <button class="transaction-btn send-btn" onclick="showSendOptions()">
+            <ion-icon name="arrow-up-circle-outline"></ion-icon>
+            {{ tr['send'] }}
+        </button>
+        <button class="transaction-btn receive-btn" onclick="showReceiveQR()">
+            <ion-icon name="arrow-down-circle-outline"></ion-icon>
+            {{ tr['receive'] }}
+        </button>
+    </div>
+    
+    <div id="transactionContent">
+        <!-- Dynamic content based on selection -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+function showReceiveQR() {
+    if (window.stopQrScanner) {
+        window.stopQrScanner();
+    }
+    setTransactionActive('receive');
+
+    const content = document.getElementById('transactionContent');
+    content.innerHTML = `
+        <div class="qr-display">
+            <img src="{{ current_user.qrim }}" alt="QR Code" onclick="openQRCode()">
+        </div>
+        <p style="margin-top: 15px; color: var(--text-secondary);">
+            {{ tr['scanToReceive'] }}
+        </p>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 10px;">
+            {{ tr['walletId'] }}: {{ current_user.greencoin_id }}
+        </p>
+    `;
+}
+
+function openQRCode() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="qr-modal">
+            <img src="{{ current_user.qrim }}" alt="Full-size QR Code">
+            <button type="button" onclick="this.closest('.modal-overlay').remove()">{{ tr['done'] }}</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            overlay.remove();
+        }
+    });
+}
+
+function showSendOptions() {
+    setTransactionActive('send');
+
+    const content = document.getElementById('transactionContent');
+    content.innerHTML = `
+        <div class="scanner-container" id="qrScanner">
+            <div id="qr-reader" style="width: 100%;"></div>
+        </div>
+        <div id="sendAmount" style="display: none;">
+            <div class="amount-input-container">
+                <input type="number" id="amountInput" class="amount-input" placeholder="{{ tr['amountLabel'] }}" min="1">
+                <button class="checkout-btn" onclick="processPayment()">{{ tr['sendPayment'] }}</button>
+            </div>
+        </div>
+    `;
+
+    requestCameraPermission()
+        .then(() => startScanner())
+        .catch(error => handleCameraPermissionError(error));
+}
+
+function requestCameraPermission() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        return Promise.reject(new Error('Camera not supported'));
+    }
+
+    return navigator.mediaDevices.getUserMedia({
+        video: {
+            facingMode: { ideal: 'environment' },
+            width: { min: 640 },
+            height: { min: 480 }
+        }
+    }).then(stream => {
+        stream.getTracks().forEach(track => track.stop());
+    });
+}
+
+function handleCameraPermissionError(error) {
+    console.warn('Camera permission error:', error);
+    const content = document.getElementById('transactionContent');
+    content.innerHTML = `
+        <div style="padding: 24px; color: var(--text-secondary); text-align: center;">
+            <p style="font-size: 1rem; margin-bottom: 12px;">{{ tr['cameraRequired'] }}</p>
+            <p style="font-size: 0.95rem; margin-bottom: 20px;">{{ tr['cameraSettings'] }}</p>
+            <button class="checkout-btn" onclick="location.reload()">{{ tr['tryAgain'] }}</button>
+        </div>
+    `;
+
+    setTimeout(() => {
+        if (!window.html5QrScannerInstance) {
+            window.location.reload();
+        }
+    }, 6000);
+}
+
+function startScanner() {
+    if (window.html5QrScannerInstance) {
+        window.stopQrScanner();
+    }
+
+    const qrSize = Math.min(window.innerWidth - 60, 360);
+    const config = {
+        fps: 10,
+        qrbox: { width: qrSize, height: qrSize },
+        aspectRatio: 1.0,
+        videoConstraints: {
+            facingMode: { ideal: 'environment' },
+            width: { min: 640 },
+            height: { min: 480 }
+        },
+        rememberLastUsedCamera: true
+    };
+
+    window.html5QrScannerInstance = new Html5Qrcode('qr-reader');
+    window.html5QrScannerInstance.start(
+        { facingMode: 'environment' },
+        config,
+        (decodedText) => {
+            window.html5QrScannerInstance.stop();
+            window.html5QrScannerInstance = null;
+
+            document.getElementById('qrScanner').style.display = 'none';
+            document.getElementById('sendAmount').style.display = 'block';
+            window.scannedId = decodedText;
+        },
+        (errorMessage) => {
+            console.debug('QR scan error:', errorMessage);
+        }
+    ).catch(err => {
+        console.warn('QR scanner failed to start:', err);
+        handleCameraPermissionError(err);
+    });
+}
+
+window.stopQrScanner = function() {
+    if (window.html5QrScannerInstance) {
+        window.html5QrScannerInstance.stop().then(() => {
+            window.html5QrScannerInstance.clear();
+            window.html5QrScannerInstance = null;
+        }).catch(() => {
+            window.html5QrScannerInstance = null;
+        });
+    }
+};
+
+function setTransactionActive(type) {
+    const buttons = document.querySelectorAll('.transaction-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    if (type === 'send') {
+        document.querySelector('.send-btn')?.classList.add('active');
+    } else if (type === 'receive') {
+        document.querySelector('.receive-btn')?.classList.add('active');
+    }
+}
+
+function processPayment() {
+    const amount = document.getElementById('amountInput').value;
+
+    if (!window.scannedId) {
+        alert('{{ tr['scanRecipientFirst'] }}');
+        return;
+    }
+    
+    if (!amount || amount <= 0) {
+        alert('{{ tr['enterValidAmount'] }}');
+        return;
+    }
+
+    fetch('/sendCoins', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            recipientId: window.scannedId,
+            amount: amount
+        })
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Transaction failed.');
+        }
+        return data;
+    })
+    .then(data => {
+        window.currentBalance = data.balance;
+
+        const senderPicHtml = data.senderPic
+            ? `<img class="confirmation-profile-pic" src="${data.senderPic}" alt="${data.senderName}">`
+            : `<div class="confirmation-profile-placeholder">${data.senderName.split(' ').map(n => n[0]).slice(0,2).join('')}</div>`;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="payment-confirmation">
+                <div class="confirmation-profile">${senderPicHtml}</div>
+                <ion-icon name="checkmark-circle-outline" class="confirmation-icon"></ion-icon>
+                <h2>{{ tr['paymentSuccess'] }}</h2>
+                <p style="color: var(--text-secondary); margin-top: 10px;">{{ tr['thankYou'] }}</p>
+                <div class="confirmation-details">
+                    <div class="confirmation-detail-row">
+                        <span>{{ tr['fromLabel'] }}</span>
+                        <span>${data.senderName}</span>
+                    </div>
+                    <div class="confirmation-detail-row">
+                        <span>{{ tr['toLabel'] }}</span>
+                        <span>${data.recipientName || data.recipientId}</span>
+                    </div>
+                    <div class="confirmation-detail-row">
+                        <span>{{ tr['amountLabel'] }}</span>
+                        <span>${amount} GC</span>
+                    </div>
+                    <div class="confirmation-detail-row">
+                        <span>{{ tr['newBalanceLabel'] }}</span>
+                        <span>${data.balance} GC</span>
+                    </div>
+                    <div class="confirmation-detail-row">
+                        <span>{{ tr['timeLabel'] }}</span>
+                        <span>${new Date().toLocaleString()}</span>
+                    </div>
+                </div>
+                <button class="checkout-btn" onclick="location.reload()">{{ tr['done'] }}</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                overlay.remove();
+                location.reload();
+            }
+        });
+    })
+    .catch(error => {
+        alert(error.message);
+    });
+}
+</script>
+{% endblock %}

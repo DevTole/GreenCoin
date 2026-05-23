@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tr['settings'] }}{% endblock %}
+{% block page_name %}{{ tr['settings'] }}{% endblock %}
+{% block subtitle %}{{ tr['managePreferences'] }}{% endblock %}
+
+{% block content %}
+<div class="settings-grid">
+    <section class="settings-card">
+        <div class="settings-card-header">
+            <h3>{{ tr['profile'] }}</h3>
+            <span>{{ tr['profileDesc'] }}</span>
+        </div>
+
+        <label class="form-label" for="nameInput">{{ tr['displayName'] }}</label>
+        <input id="nameInput" class="form-control" type="text" placeholder="{{ tr['displayName'] }}" value="{{ current_user.name }}">
+
+        <button class="action-btn" onclick="updateName()">{{ tr['saveChanges'] }}</button>
+    </section>
+
+    <section class="settings-card">
+        <div class="settings-card-header">
+            <h3>{{ tr['language'] }}</h3>
+            <span>{{ tr['languageDesc'] }}</span>
+        </div>
+
+        <label class="form-label" for="langSelect">{{ tr['language'] }}</label>
+        <select id="langSelect" class="select-control">
+            <option value="en" {% if current_user.lang == 'en' %}selected{% endif %}>English</option>
+            <option value="sw" {% if current_user.lang == 'sw' %}selected{% endif %}>Swahili</option>
+            <option value="tt" {% if current_user.lang == 'tt' %}selected{% endif %}>Taita</option>
+        </select>
+
+        <button class="action-btn" onclick="updateLanguage()">{{ tr['saveChanges'] }}</button>
+    </section>
+
+    <section class="settings-card settings-card-danger">
+        <div class="settings-card-header">
+            <h3>{{ tr['security'] }}</h3>
+            <span>{{ tr['securityDesc'] }}</span>
+        </div>
+
+        <p class="settings-description">{{ tr['deleteWarning'] }}</p>
+        <button class="danger-btn" onclick="deleteAccount()">{{ tr['deleteAccount'] }}</button>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function updateName() {
+    const name = document.getElementById('nameInput').value.trim();
+    const res = await fetch('/updateName', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name})
+    });
+    const data = await res.json();
+    alert(data.message);
+}
+
+async function updateLanguage() {
+    const lang = document.getElementById('langSelect').value;
+    const res = await fetch('/updateLanguage', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({lang})
+    });
+    const data = await res.json();
+    alert(data.message);
+}
+
+async function deleteAccount() {
+    if (!confirm('{{ tr['confirmDelete'] }}')) return;
+    const res = await fetch('/deleteAccount', {method: 'POST'});
+    const data = await res.json();
+    alert(data.message);
+    if (data.redirect) {
+        window.location.href = data.redirect;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tr['home'] }}{% endblock %}
+{% block page_name %}{{ tr['home'] }}{% endblock %}
+{% block subtitle %}{{ tr['manageEco'] }}{% endblock %}
+
+{% block content %}
+<div class="profile-section">
+    <div class="profile-pic-container" onclick="document.getElementById('profilePicInput').click()">
+        {% if current_user.pic and current_user.pic != 'no' %}
+            <img src="{{ current_user.pic }}" alt="Profile" class="profile-pic">
+        {% else %}
+            <div class="profile-initials">
+                {% set names = current_user.name.split() %}
+                {% if names|length > 1 %}
+                    {{ names[0][0] }}{{ names[1][0] }}
+                {% else %}
+                    {{ names[0][0] }}
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    <input type="file" id="profilePicInput" accept="image/*" style="display: none;" onchange="updateProfilePic(this)">
+    
+    <h2 class="username">{{ current_user.name }}</h2>
+    <p class="user-subtitle">{{ tr['profileSubtitle'] }}</p>
+</div>
+
+<div class="wallet-container">
+    <div class="wallet-section">
+        <div class="wallet-header">
+            <span class="wallet-label">{{ tr['walletBalance'] }}</span>
+            <button class="balance-toggle" onclick="toggleBalanceVisibility()" id="toggleButton">
+                <ion-icon name="eye-outline" id="balanceEye"></ion-icon>
+            </button>
+        </div>
+        <div class="wallet-value" id="balanceDisplay">
+            <span class="wallet-amount">{{ current_user.balance }}</span>
+            <span class="wallet-currency">GC</span>
+        </div>
+    </div>
+    
+    <div class="wallet-section">
+        <div class="wallet-header">
+            <span class="wallet-label">{{ tr['walletId'] }}</span>
+        </div>
+        <div class="wallet-id" id="walletIdDisplay">
+            <span class="wallet-id-text">{{ current_user.greencoin_id }}</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let isBalanceVisible = true;
+const actualBalance = '{{ current_user.balance }}';
+const actualWalletId = '{{ current_user.greencoin_id }}';
+
+function toggleBalanceVisibility() {
+    isBalanceVisible = !isBalanceVisible;
+    
+    const balanceDisplay = document.getElementById('balanceDisplay');
+    const walletIdDisplay = document.getElementById('walletIdDisplay');
+    const eyeIcon = document.getElementById('balanceEye');
+    const toggleBtn = document.getElementById('toggleButton');
+    
+    if (isBalanceVisible) {
+        balanceDisplay.classList.remove('balance-blurred');
+        walletIdDisplay.classList.remove('balance-blurred');
+        toggleBtn.classList.remove('active');
+        eyeIcon.setAttribute('name', 'eye-outline');
+        
+        balanceDisplay.innerHTML = `
+            <span class="wallet-amount">${actualBalance}</span>
+            <span class="wallet-currency">GC</span>
+        `;
+        walletIdDisplay.innerHTML = `
+            <span class="wallet-id-text">${actualWalletId}</span>
+        `;
+    } else {
+        balanceDisplay.classList.add('balance-blurred');
+        walletIdDisplay.classList.add('balance-blurred');
+        toggleBtn.classList.add('active');
+        eyeIcon.setAttribute('name', 'eye-off-outline');
+        
+        balanceDisplay.innerHTML = `
+            <span class="wallet-amount">••••••</span>
+            <span class="wallet-currency">GC</span>
+        `;
+        walletIdDisplay.innerHTML = `
+            <span class="wallet-id-text">••••-••••-••••-••••</span>
+        `;
+    }
+}
+
+function updateProfilePic(input) {
+    if (input.files && input.files[0]) {
+        const formData = new FormData();
+        formData.append('file', input.files[0]);
+        
+        fetch('/updateProfilePic', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.url) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function updateBalance() {
+    fetch('/Get_Balance')
+        .then(response => response.json())
+        .then(data => {
+            if (isBalanceVisible) {
+                const balanceDisplay = document.getElementById('balanceDisplay');
+                balanceDisplay.innerHTML = `
+                    <span class="wallet-amount">${data.bal}</span>
+                    <span class="wallet-currency">GC</span>
+                `;
+            }
+        });
+}
+
+setInterval(updateBalance, 15000);
+</script>
+{% endblock %}

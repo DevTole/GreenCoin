@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tr['appName'] }} | {{ tr['login'] }}</title>
+    <link rel="icon" href="{{ url_for('images', filename='logo.png') }}" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 40px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-header h1 {
+            color: var(--accent-secondary);
+            margin-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-secondary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(31, 125, 83, 0.4);
+        }
+        
+        .error-message {
+            background: rgba(255, 0, 0, 0.1);
+            color: #ff6b6b;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .signup-link a {
+            color: var(--accent-secondary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>{{ tr['appName'] }}</h1>
+            <p>{{ tr['welcomeBack'] }}</p>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>{{ tr['usernameLabel'] }}</label>
+                <input type="text" name="username" required placeholder="{{ tr['usernameLabel'] }}">
+            </div>
+            
+            <div class="form-group">
+                <label>{{ tr['passwordLabel'] }}</label>
+                <input type="password" name="password" required placeholder="{{ tr['passwordLabel'] }}">
+            </div>
+            
+            <button type="submit" class="submit-btn">{{ tr['login'] }}</button>
+        </form>
+        
+        <div class="signup-link">
+            {{ tr['dontHaveAccount'] }} <a href="{{ url_for('signup') }}">{{ tr['signUp'] }}</a>
+        </div>
+    </div>
+
+    <script>
+        function handleLogin(e) {
+            e.preventDefault();
+            
+            const formData = {
+                username: e.target.username.value,
+                password: e.target.password.value
+            };
+            
+            fetch('/Login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.location) {
+                    window.location.href = data.location;
+                } else {
+                    const errorDiv = document.getElementById('errorMessage');
+                    errorDiv.textContent = data.message;
+                    errorDiv.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        errorDiv.style.display = 'none';
+                    }, 3000);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

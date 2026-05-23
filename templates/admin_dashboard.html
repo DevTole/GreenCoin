@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Inventory</title>
+    <style>
+        :root { --p: #2ecc71; --d: #2c3e50; --l: #f4f7f6; --w: #ffffff; --g: #7f8c8d; }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #eef2f3; }
+        header { background: var(--d); color: white; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; position: fixed; top: 0; z-index: 100; }
+        .nav-links { display: flex; gap: 18px; }
+        .nav-links a { color: white; text-decoration: none; font-size: 12px; text-transform: uppercase; opacity: .75; letter-spacing: .5px; }
+        .nav-links a.active, .nav-links a:hover { opacity: 1; border-bottom: 2px solid var(--p); }
+        .page { max-width: 980px; margin: 100px auto 40px; padding: 0 16px; }
+        .hero { display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 20px; align-items: center; justify-content: space-between; }
+        .hero h1 { margin: 0; font-size: 28px; }
+        .hero p { margin: 8px 0 0; color: var(--g); max-width: 540px; }
+        .inventory-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+        .product-card { background: var(--w); border-radius: 22px; overflow: hidden; box-shadow: 0 20px 45px rgba(44,62,80,.09); }
+        .product-card img { width: 100%; height: 180px; object-fit: cover; }
+        .product-card-body { padding: 18px; }
+        .product-name { margin: 0 0 8px; font-size: 18px; }
+        .product-meta { color: var(--g); font-size: 13px; margin-bottom: 14px; }
+        .product-price { font-weight: 700; color: var(--d); margin-bottom: 12px; }
+        .actions { display: flex; gap: 10px; }
+        .button { flex: 1; padding: 10px 12px; border-radius: 14px; border: none; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: .6px; }
+        .button.primary { background: var(--p); color: white; }
+        .button.secondary { background: #ecf0f1; color: var(--d); }
+        .empty-state { padding: 36px 24px; background: var(--w); border-radius: 22px; text-align: center; color: var(--g); }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="nav-links">
+            <a href="/admin/mint">Mint</a>
+            <a href="/admin/dashboard" class="active">Inventory</a>
+            <a href="/admin/stats">Stats</a>
+        </nav>
+    </header>
+
+    <main class="page">
+        <section class="hero">
+            <div>
+                <h1>Admin Inventory</h1>
+                <p>See all listed products and manage the catalog. Use the Mint screen to add new products to the store.</p>
+            </div>
+            <a href="/admin/mint" class="button primary">Upload Product</a>
+        </section>
+
+        {% if items %}
+        <section class="inventory-grid">
+            {% for item in items %}
+            <article class="product-card">
+                <img src="{{ item.link_image }}" alt="{{ item.name }}">
+                <div class="product-card-body">
+                    <h2 class="product-name">{{ item.name }}</h2>
+                    <div class="product-meta">Seller: {{ item.seller or 'GreenCoin' }}</div>
+                    <div class="product-price">{{ item.price }} GC</div>
+                    <div class="actions">
+                        <button class="button secondary">View</button>
+                        <button class="button primary">Edit</button>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+        {% else %}
+        <div class="empty-state">No inventory items found yet. Upload new products from the Mint page.</div>
+        {% endif %}
+    </main>
+</body>
+</html>

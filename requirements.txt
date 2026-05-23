@@ -1,0 +1,9 @@
+Flask
+Flask-Login
+SQLAlchemy
+psycopg2-binary
+argon2-cffi
+requests
+qrcode
+Pillow
+gunicorn

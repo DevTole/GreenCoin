@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tr['cart'] }}{% endblock %}
+{% block page_name %}{{ tr['cart'] }}{% endblock %}
+{% block subtitle %}{{ tr['cartSubtitle'] }}{% endblock %}
+
+{% block content %}
+<div id="cartItems">
+    <!-- Cart items will be loaded dynamically -->
+</div>
+
+<div class="cart-summary" id="cartSummary" style="display: none;">
+    <div class="summary-row">
+        <span class="summary-label">{{ tr['totalCost'] }}</span>
+        <span class="summary-value" id="totalCost">0 GC</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">{{ tr['currentBalanceLabel'] }}</span>
+        <span class="summary-value" id="currentBalance">{{ current_user.balance }} GC</span>
+    </div>
+    <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">{{ tr['checkout'] }}</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const cartLabels = {
+    cartEmpty: {{ tr['cartEmpty']|tojson }},
+    quantityLabel: {{ tr['quantityLabel']|tojson }},
+    buyNow: {{ tr['buyNow']|tojson }},
+    deleteLabel: {{ tr['delete']|tojson }},
+    insufficientBalance: {{ tr['insufficientBalance']|tojson }},
+    proceedToCheckout: {{ tr['proceedToCheckout']|tojson }},
+    notice: {{ tr['notice']|tojson }},
+    ok: {{ tr['ok']|tojson }},
+    comingSoon: {{ tr['comingSoon']|tojson }}
+};
+
+let cartTotal = 0;
+
+function loadCart() {
+    fetch('/Get-Cart')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('cartItems');
+            container.innerHTML = '';
+            
+            if (data.cart.length === 0) {
+                container.innerHTML = `<p style="text-align: center; padding: 40px;">${cartLabels.cartEmpty}</p>`;
+                document.getElementById('cartSummary').style.display = 'none';
+                return;
+            }
+            
+            cartTotal = 0;
+            
+            data.cart.forEach(item => {
+                const cartItem = createCartItem(item);
+                container.appendChild(cartItem);
+                cartTotal += item.price * item.quantity;
+            });
+            
+            updateSummary();
+        });
+}
+
+function createCartItem(item) {
+    const div = document.createElement('div');
+    div.className = 'cart-item';
+    
+    div.innerHTML = `
+        <img src="${item.link_image}" alt="${item.name}" class="cart-item-image">
+        <div class="cart-item-details">
+            <h4 class="cart-item-name">${item.name}</h4>
+            <p class="cart-item-quantity">${cartLabels.quantityLabel}: ${item.quantity}</p>
+        </div>
+        <div class="cart-item-actions">
+            <button class="buy-now-btn" onclick="buyNow('${item.item_id}')">${cartLabels.buyNow}</button>
+            <button class="delete-btn" onclick="removeFromCart('${item.item_id}')">${cartLabels.deleteLabel}</button>
+        </div>
+    `;
+    
+    return div;
+}
+
+function updateSummary() {
+    const summary = document.getElementById('cartSummary');
+    const totalCost = document.getElementById('totalCost');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const balance = parseFloat('{{ current_user.balance }}');
+    
+    summary.style.display = 'block';
+    totalCost.textContent = cartTotal + ' GC';
+    
+    if (cartTotal > balance) {
+        checkoutBtn.classList.add('insufficient');
+        checkoutBtn.textContent = cartLabels.insufficientBalance;
+    } else {
+        checkoutBtn.classList.remove('insufficient');
+        checkoutBtn.textContent = cartLabels.proceedToCheckout;
+    }
+}
+
+function removeFromCart(itemId) {
+    fetch('/Remove-From-Cart', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            itemId: itemId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message === 'removed') {
+            loadCart();
+        }
+    });
+}
+
+function buyNow(itemId) {
+    showPopup(cartLabels.comingSoon);
+}
+
+function checkout() {
+    if (cartTotal > parseFloat('{{ current_user.balance }}')) {
+        showPopup(cartLabels.insufficientBalance);
+    } else {
+        showPopup(cartLabels.comingSoon);
+    }
+}
+
+function showPopup(message) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="payment-confirmation">
+            <ion-icon name="information-circle-outline" class="confirmation-icon"></ion-icon>
+            <h2>${cartLabels.notice}</h2>
+            <p>${message}</p>
+            <button class="checkout-btn" onclick="this.closest('.modal-overlay').remove()">${cartLabels.ok}</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            overlay.remove();
+        }
+    });
+}
+
+// Load cart on page load
+loadCart();
+</script>
+{% endblock %}

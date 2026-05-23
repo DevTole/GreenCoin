@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tr['appName'] }} | {{ tr['signUp'] }}</title>
+    <link rel="icon" href="{{ url_for('images', filename='logo.png') }}" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <style>
+        .signup-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 40px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+        
+        .signup-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .signup-header h1 {
+            color: var(--accent-secondary);
+            margin-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-secondary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(31, 125, 83, 0.4);
+        }
+        
+        .success-message, .error-message {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .success-message {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+        }
+        
+        .error-message {
+            background: rgba(255, 0, 0, 0.1);
+            color: #ff6b6b;
+        }
+        
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .login-link a {
+            color: var(--accent-secondary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="signup-header">
+            <h1>{{ tr['appName'] }}</h1>
+            <p>{{ tr['createEcoAccount'] }}</p>
+        </div>
+        
+        <div class="success-message" id="successMessage"></div>
+        <div class="error-message" id="errorMessage"></div>
+        
+        <form id="signupForm" onsubmit="handleSignup(event)">
+            <div class="form-group">
+                <label>{{ tr['fullNameLabel'] }}</label>
+                <input type="text" name="full_name" required placeholder="{{ tr['fullNameLabel'] }}">
+            </div>
+            
+            <div class="form-group">
+                <label>{{ tr['usernameLabel'] }}</label>
+                <input type="text" name="username" required placeholder="{{ tr['usernameLabel'] }}">
+            </div>
+            
+            <div class="form-group">
+                <label>{{ tr['passwordLabel'] }}</label>
+                <input type="password" name="password" required placeholder="{{ tr['passwordLabel'] }}">
+            </div>
+            
+            <div class="form-group">
+                <label>{{ tr['language'] }}</label>
+                <select name="lang">
+                    <option value="en">English</option>
+                    <option value="sw">Kiswahili</option>
+                    <option value="tt">Taita</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="submit-btn">{{ tr['createAccount'] }}</button>
+        </form>
+        
+        <div class="login-link">
+            {{ tr['alreadyHaveAccount'] }} <a href="{{ url_for('login') }}">{{ tr['login'] }}</a>
+        </div>
+    </div>
+
+    <script>
+        function handleSignup(e) {
+            e.preventDefault();
+            
+            const formData = {
+                full_name: e.target.full_name.value,
+                username: e.target.username.value,
+                password: e.target.password.value,
+                lang: e.target.lang.value
+            };
+            
+            fetch('/Signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const successDiv = document.getElementById('successMessage');
+                const errorDiv = document.getElementById('errorMessage');
+                
+                if (data.message === 'account creation successful') {
+                    successDiv.textContent = '{{ tr['accountCreatedSuccess'] }}';
+                    successDiv.style.display = 'block';
+                    errorDiv.style.display = 'none';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    errorDiv.textContent = data.message;
+                    errorDiv.style.display = 'block';
+                    successDiv.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tr['buy'] }}{% endblock %}
+{% block page_name %}{{ tr['buy'] }}{% endblock %}
+{% block subtitle %}{{ tr['shopSubtitle'] }}{% endblock %}
+
+{% block content %}
+<div class="shop-grid" id="shopItems">
+    <!-- Items will be loaded dynamically -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const buyLabels = {
+    addToCart: {{ tr['addToCart']|tojson }},
+    itemDescriptionFallback: {{ tr['itemDescriptionFallback']|tojson }},
+    quantityLabel: {{ tr['quantityLabel']|tojson }},
+    addedToCart: {{ tr['addedToCart']|tojson }}
+};
+
+function loadShopItems() {
+    fetch('/Buy')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('shopItems');
+            container.innerHTML = '';
+            
+            data.items.forEach(item => {
+                const itemCard = createShopItemCard(item);
+                container.appendChild(itemCard);
+            });
+        });
+}
+
+function createShopItemCard(item) {
+    const card = document.createElement('div');
+    card.className = 'shop-item';
+    
+    let quantity = 1;
+    
+    card.innerHTML = `
+        <img src="${item.link_image}" alt="${item.name}" class="shop-item-image">
+        <h3 class="shop-item-name">${item.name}</h3>
+        <p class="shop-item-description">${item.description || buyLabels.itemDescriptionFallback}</p>
+        <div class="shop-item-price">${item.price} GC</div>
+        <div class="shop-item-actions">
+            <div class="quantity-control">
+                <button class="quantity-btn" onclick="updateQuantity(this, -1)">-</button>
+                <span class="quantity-display">1</span>
+                <button class="quantity-btn" onclick="updateQuantity(this, 1)">+</button>
+            </div>
+            <button class="add-to-cart-btn" onclick="addToCart('${item.id}', '${item.name}', ${item.price}, '${item.link_image}', '${item.seller}', this)">
+                ${buyLabels.addToCart}
+            </button>
+        </div>
+    `;
+    
+    return card;
+}
+
+function updateQuantity(btn, change) {
+    const display = btn.parentElement.querySelector('.quantity-display');
+    let current = parseInt(display.textContent);
+    current = Math.max(1, current + change);
+    display.textContent = current;
+}
+
+function addToCart(itemId, name, price, linkImage, seller, btn) {
+    const quantityDisplay = btn.parentElement.querySelector('.quantity-display');
+    const quantity = parseInt(quantityDisplay.textContent);
+    
+    fetch('/Add-To-Cart', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            itemId: itemId,
+            name: name,
+            price: price,
+            link_image: linkImage,
+            seller: seller,
+            quantity: quantity
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message === 'success') {
+            // Visual feedback
+            btn.textContent = buyLabels.addedToCart;
+            btn.style.background = '#4CAF50';
+            setTimeout(() => {
+                btn.textContent = buyLabels.addToCart;
+                btn.style.background = '';
+            }, 2000);
+        }
+    });
+}
+
+// Load items on page load
+loadShopItems();
+</script>
+{% endblock %}

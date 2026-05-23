@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GreenCoin Login</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: #e0e0e0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1e1e1e; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 300px; text-align: center; border-top: 5px solid #4CAF50; }
+        input { width: 100%; padding: 10px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #4CAF50; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        a { color: #4CAF50; text-decoration: none; font-size: 0.85rem; display: block; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>GreenCoin Login</h2>
+        <form method="post">
+            <input name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <a href="{{ url_for('signup_page') }}">Don't have an account? Sign Up</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tr['appName'] }} | {% block title %}{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('images', filename='logo.png') }}" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-logo">
+                    <ion-icon name="leaf-outline"></ion-icon>
+                </div>
+                <div class="header-text">
+                    <h1>{{ tr['appName'] }} | {% block page_name %}{% endblock %}</h1>
+                    <p>{% block subtitle %}{% endblock %}</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="theme-toggle-container" onclick="toggleTheme()">
+                    <ion-icon name="sunny-outline" id="theme-icon"></ion-icon>
+                    <span id="theme-text">{{ tr['lightMode'] }}</span>
+                </div>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <ion-icon name="log-out-outline"></ion-icon>
+                        <span>{{ tr['logout'] }}</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <nav class="nav-bar">
+        <a href="{{ url_for('home') }}" class="nav-item {% if request.endpoint == 'home' %}active{% endif %}" data-page="home" aria-label="{{ tr['home'] }}">
+            <div class="nav-icon-container">
+                <ion-icon name="home-outline"></ion-icon>
+            </div>
+        </a>
+        <a href="{{ url_for('buy') }}" class="nav-item {% if request.endpoint == 'buy' %}active{% endif %}" data-page="buy" aria-label="{{ tr['buy'] }}">
+            <div class="nav-icon-container">
+                <ion-icon name="cart-outline"></ion-icon>
+            </div>
+        </a>
+        <a href="{{ url_for('cart') }}" class="nav-item {% if request.endpoint == 'cart' %}active{% endif %}" data-page="cart" aria-label="{{ tr['cart'] }}">
+            <div class="nav-icon-container">
+                <ion-icon name="bag-handle-outline"></ion-icon>
+            </div>
+        </a>
+        <a href="{{ url_for('sell') }}" class="nav-item {% if request.endpoint == 'sell' %}active{% endif %}" data-page="sell" aria-label="{{ tr['sell'] }}">
+            <div class="nav-icon-container">
+                <ion-icon name="swap-horizontal-outline"></ion-icon>
+            </div>
+        </a>
+        <a href="{{ url_for('settings') }}" class="nav-item {% if request.endpoint == 'settings' %}active{% endif %}" data-page="settings" aria-label="{{ tr['settings'] }}">
+            <div class="nav-icon-container">
+                <ion-icon name="cog-outline"></ion-icon>
+            </div>
+        </a>
+    </nav>
+
+<script>
+    const userPreference = '{{ current_user.preference if current_user.is_authenticated else "dark" }}';
+    const themeLabels = {
+        lightMode: '{{ tr["lightMode"] }}',
+        darkMode: '{{ tr["darkMode"] }}'
+    };
+    
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+        
+        if (theme === 'light') {
+            themeIcon.setAttribute('name', 'moon-outline');
+            themeText.textContent = themeLabels.darkMode;
+        } else {
+            themeIcon.setAttribute('name', 'sunny-outline');
+            themeText.textContent = themeLabels.lightMode;
+        }
+    }
+    
+    function toggleTheme() {
+        if (window.stopQrScanner) {
+            window.stopQrScanner();
+        }
+
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+        
+        fetch('/togglePreference', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+    }
+    
+    if (userPreference && userPreference !== 'None') {
+        setTheme(userPreference);
+    }
+    
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            if (this.classList.contains('active')) {
+                e.preventDefault();
+                return;
+            }
+            
+            e.preventDefault();
+            const targetUrl = this.getAttribute('href');
+            const activeItem = document.querySelector('.nav-item.active');
+            
+            if (activeItem && activeItem !== this) {
+                const activeContainer = activeItem.querySelector('.nav-icon-container');
+                const newContainer = this.querySelector('.nav-icon-container');
+                
+                const dropOut = document.createElement('div');
+                dropOut.className = 'liquid-drop pouring';
+                activeContainer.appendChild(dropOut);
+                
+                const rippleOut = document.createElement('div');
+                rippleOut.className = 'ripple';
+                activeContainer.appendChild(rippleOut);
+                
+                setTimeout(() => {
+                    dropOut.remove();
+                    rippleOut.remove();
+                    
+                    const dropIn = document.createElement('div');
+                    dropIn.className = 'liquid-drop pouring-in';
+                    newContainer.appendChild(dropIn);
+                    
+                    const rippleIn = document.createElement('div');
+                    rippleIn.className = 'ripple';
+                    newContainer.appendChild(rippleIn);
+                    
+                    setTimeout(() => {
+                        window.location.href = targetUrl;
+                    }, 400);
+                }, 600);
+            } else {
+                window.location.href = targetUrl;
+            }
+        });
+    });
+</script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

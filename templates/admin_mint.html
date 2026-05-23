@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Upload Product</title>
+    <style>
+        :root { --p: #2ecc71; --d: #2c3e50; --l: #f4f7f6; --w: #ffffff; --s: #7f8c8d; }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #eef2f3; }
+        header { background: var(--d); color: white; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; position: fixed; top: 0; z-index: 100; }
+        .nav-links { display: flex; gap: 18px; }
+        .nav-links a { color: white; text-decoration: none; font-size: 12px; text-transform: uppercase; opacity: .75; letter-spacing: .5px; }
+        .nav-links a.active, .nav-links a:hover { opacity: 1; border-bottom: 2px solid var(--p); }
+        .page { max-width: 980px; margin: 100px auto 40px; padding: 0 16px; }
+        .card { background: var(--w); border-radius: 22px; box-shadow: 0 14px 30px rgba(44,62,80,.08); padding: 28px; margin-bottom: 20px; }
+        .card h1 { margin: 0 0 12px; font-size: 24px; }
+        .card p { margin: 0 0 18px; color: var(--s); }
+        .field { display: grid; gap: 10px; margin-bottom: 16px; }
+        .field label { font-size: 13px; color: var(--d); font-weight: 600; }
+        .field input { width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid #dfe4ea; background: #fbfdff; font-size: 15px; color: var(--d); }
+        .button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; background: var(--d); color: white; border: none; border-radius: 14px; cursor: pointer; font-weight: 700; font-size: 14px; width: 100%; }
+        .helper { color: #95a5a6; font-size: 13px; margin-top: -10px; }
+        .success { color: #27ae60; font-size: 14px; margin-bottom: 14px; }
+        .error { color: #c0392b; font-size: 14px; margin-bottom: 14px; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="nav-links">
+            <a href="/admin/mint" class="active">Mint</a>
+            <a href="/admin/dashboard">Inventory</a>
+            <a href="/admin/stats">Stats</a>
+        </nav>
+    </header>
+
+    <main class="page">
+        <div class="card">
+            <h1>Upload Product</h1>
+            <p>Admin can add new items to the shop inventory without using the regular signup flow.</p>
+
+            <div id="statusMessage"></div>
+
+            <div class="field">
+                <label for="productName">Product Name</label>
+                <input id="productName" type="text" placeholder="Example: Recycled Tote Bag">
+            </div>
+            <div class="field">
+                <label for="productPrice">Price (GC)</label>
+                <input id="productPrice" type="number" min="0" placeholder="100">
+            </div>
+            <div class="field">
+                <label for="productImage">Image URL</label>
+                <input id="productImage" type="text" placeholder="https://...">
+                <span class="helper">Leave blank to use a placeholder image.</span>
+            </div>
+            <div class="field">
+                <label for="productSeller">Seller Name</label>
+                <input id="productSeller" type="text" placeholder="GreenCoin Team">
+            </div>
+
+            <button class="button" onclick="uploadProduct()">Upload Product</button>
+        </div>
+    </main>
+
+    <script>
+        function uploadProduct() {
+            const name = document.getElementById('productName').value.trim();
+            const price = document.getElementById('productPrice').value.trim();
+            const link_image = document.getElementById('productImage').value.trim();
+            const seller = document.getElementById('productSeller').value.trim();
+            const status = document.getElementById('statusMessage');
+
+            status.textContent = '';
+            status.className = '';
+
+            if (!name || !price) {
+                status.textContent = 'Product name and price are required.';
+                status.className = 'error';
+                return;
+            }
+
+            fetch('/admin/upload-product', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, price, link_image, seller })
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Upload failed.');
+                status.textContent = 'Product uploaded successfully.';
+                status.className = 'success';
+                document.getElementById('productName').value = '';
+                document.getElementById('productPrice').value = '';
+                document.getElementById('productImage').value = '';
+                document.getElementById('productSeller').value = '';
+            })
+            .catch(err => {
+                status.textContent = err.message;
+                status.className = 'error';
+            });
+        }
+    </script>
+</body>
+</html>
