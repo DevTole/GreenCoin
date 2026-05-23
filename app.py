@@ -402,7 +402,7 @@ class AccountManager:
                 }
 
         except VerifyMismatchError:
-            return "wrong password"
+            return "Wrong username or password"
         except OperationalError:
             return "connection failed"
 
